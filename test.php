@@ -7,7 +7,13 @@ session_start();
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>无标题文档</title>
+    <title>japan yahoo store api test page @ syslinks</title>
+    <style type="text/css">
+        * {
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', '游ゴシック Medium', meiryo, sans-serif;
+            font-size: 14px;
+        }
+    </style>
 </head>
 
 <body>
@@ -119,11 +125,11 @@ curl_setopt($ch, CURLOPT_SSLCERT, './' . $G_SELLER_ID . '.crt');
 curl_setopt($ch, CURLOPT_SSLKEY, './' . $G_SELLER_ID . '.key');
 // curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
 $result = curl_exec($ch);
-var_dump(curl_error($ch));
-echo "--------------------------------<br/>";
+//var_dump(curl_error($ch));
+//echo "--------------------------------<br/>";
 $ResultSet = new SimpleXMLElement ($result);
-var_dump($ResultSet);
-echo "<br/>--------------------------------<br/>";
+//var_dump($ResultSet);
+//echo "<br/>--------------------------------<br/>";
 echo '新規注文件数（注文詳細未読件数）：<a href="https://pro.store.yahoo.co.jp/pro.' . $G_SELLER_ID . '/order/manage/new_order" target="_blank">' . $ResultSet->Result->Count->NewOrder . '</a><br/>';
 echo "入金待ち件数：" . $ResultSet->Result->Count->WaitPayment . "<br/>";
 echo "出荷待ち件数：" . $ResultSet->Result->Count->WaitShipping . "<br/>";
@@ -239,7 +245,7 @@ function getOrderStatusText($orderStatus, $IsSeen, $ShipStatus)
 
 $api = 'https://circus.shopping.yahooapis.jp/ShoppingWebService/V1/getStock';
 
-$data = http_build_query ( array (
+$data = http_build_query(array(
     'seller_id' => $G_SELLER_ID,
     'item_code' => '160627-01:160627-01RH,160627-01:160627-01PH,160627-01:160627-01SM,160627-01:160627-01PL,160627-01:160627-01ST'
 ));
@@ -284,8 +290,12 @@ foreach ($movies->Result as $result) {
 echo '<hr/>';
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+// 商品詳細 //////////////////////////////////////////////////////////////////////////////////////////////////////////
+$url = 'https://circus.shopping.yahooapis.jp/ShoppingWebService/V1/getItem';
+
 $data = http_build_query(array(
-    'sellerId' => "$G_SELLER_ID"
+    'seller_id' => "$G_SELLER_ID",
+    'item_code' => '160627-01'
 ));
 $options = array(
     'http' => array(
@@ -294,10 +304,20 @@ $options = array(
         'header' => implode("\r\n", $header)
     )
 );
-//$result = file_get_contents($url.'?'.$data, false, stream_context_create($options));
-//$movies = new SimpleXMLElement($result);
-//print_r($movies);
-// //////////////////////////////////////////////////////////////////////////////////
+$result = file_get_contents($url . '?' . $data, false, stream_context_create($options));
+$movies = new SimpleXMLElement($result);
+for ($iii = 0; $iii < count($movies->Result->SubCodes->SubCode); $iii++) {
+    $subcodeTmp = $movies->Result->SubCodes->SubCode[$iii];
+    echo $subcodeTmp->attributes()->code . ',' . $subcodeTmp->attributes()->quantity . '<br/>';
+    for ($jjj = 0; $jjj < count($subcodeTmp->Option); $jjj++) {
+        echo $subcodeTmp->Option[$jjj]->attributes()->name . ',' . $subcodeTmp->Option[$jjj]->attributes()->value . '<br/>';
+    }
+}
+echo '<hr/>';
+//echo "<pre>";var_dump($movies);echo "</pre>";
+// //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 $url = "https://circus.shopping.yahooapis.jp/ShoppingWebService/V1/libDirectoryList";
 $data = http_build_query(array(
     'seller_id' => "$G_SELLER_ID"
