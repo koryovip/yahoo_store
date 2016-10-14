@@ -1,5 +1,6 @@
 <?php
 require_once('./setup.php');
+date_default_timezone_set('Asia/Tokyo');
 session_start();
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -132,7 +133,7 @@ $ResultSet = new SimpleXMLElement ($result);
 //echo "<br/>--------------------------------<br/>";
 echo '新規注文件数（注文詳細未読件数）：<a href="https://pro.store.yahoo.co.jp/pro.' . $G_SELLER_ID . '/order/manage/new_order" target="_blank">' . $ResultSet->Result->Count->NewOrder . '</a><br/>';
 echo "入金待ち件数：" . $ResultSet->Result->Count->WaitPayment . "<br/>";
-echo "出荷待ち件数：" . $ResultSet->Result->Count->WaitShipping . "<br/>";
+echo '出荷待ち件数：<a href="https://pro.store.yahoo.co.jp/pro.' . $G_SELLER_ID . '/order/manage/shipping" target="_blank">' . $ResultSet->Result->Count->WaitShipping . '</a><br/>';
 echo "出荷処理中件数：" . $ResultSet->Result->Count->Shipping . "<br/>";
 echo "注文完了待ち件数：" . $ResultSet->Result->Count->WaitDone . "<br/>";
 curl_close($ch);
@@ -140,8 +141,9 @@ echo '<hr/>';
 
 
 //　注文検索　/////////////////////////////////////////////////////////////////////////////////////////////////
-$OrderTimeFrom = '20160501000000';
-$OrderTimeTo = '20161008000000';
+$OrderTimeFrom = date('YmdHis', strtotime('-30 day'));
+$OrderTimeTo = date('YmdHis');
+echo $OrderTimeFrom . '～' . $OrderTimeTo . '<br/>';
 $aaaaa = <<<EOF
 <?xml version="1.0" encoding="UTF-8" ?>
 <Req>
@@ -396,6 +398,33 @@ foreach ($movies->Result as $result) {
 }
 echo '</table><br/><hr/>';
 // /////////////////////////////////////////////////////////////
+$url = 'https://circus.shopping.yahooapis.jp/ShoppingWebService/V1/myItemList';
+$data = http_build_query(array(
+    // 'seller_id' => 'ogurakomu', /*ストアアカウント*/
+    'seller_id' => "$G_SELLER_ID", /*ストアアカウント*/
+    'start' => 1,
+    'results' => 100,
+    'stock' => 'true',
+    'query' => '1'
+));
+
+$options = array(
+    'http' => array(
+        'ignore_errors' => true,
+        'method' => 'GET',
+        'header' => implode("\r\n", $header)
+    )
+);
+$result = file_get_contents($url . '?' . $data, false, stream_context_create($options));
+// print_r($result);
+$movies = new SimpleXMLElement ($result);
+// var_dump($movies);
+foreach ($movies->Result as $result) {
+    //echo '<img src="' . $result->Url . '" /><br/><hr/>';
+    echo '<img height="100" src="http://item.shopping.c.yimg.jp/i/l/morizora_' . $result->ItemCode . '">';
+}
+
+// /////////////////////////////////////////////////////////////
 $url = 'https://circus.shopping.yahooapis.jp/ShoppingWebService/V1/libImageList';
 $data = http_build_query(array(
     // 'seller_id' => 'ogurakomu', /*ストアアカウント*/
@@ -419,6 +448,8 @@ foreach ($movies->Result as $result) {
     //echo '<img src="' . $result->Url . '" /><br/><hr/>';
     echo $result->Url . '<br/>';
 }
+
+
 ?>
 </body>
 </html>
