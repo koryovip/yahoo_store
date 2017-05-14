@@ -24,7 +24,7 @@ db.close();
 
 //ヘッダーを定義
 var headers = {
-  'Content-Type': 'text/html; charset=UTF-8'
+	'Content-Type': 'text/html; charset=UTF-8'
 }
 
 var options = {
@@ -36,7 +36,7 @@ var options = {
 var getItemList = function(callback) {
 	var items_new = [];
 	request.get(options, function (error, response, body) {
-	 	if (!(!error && response.statusCode == 200)) {
+		if (!(!error && response.statusCode == 200)) {
 			console.log('error: '+ response.statusCode);
 			return callback(items_new);
 		}
@@ -68,9 +68,9 @@ var insertData = function(stmt1, stmt2, item_new) {
 		// console.log(item_new.url);
 		stmt1.get(item_new.url, function(err, row) {
 			if (err != null) {
-                reject(err);
-                return;
-            }
+				reject(err);
+				return;
+			}
 			// console.log(row);
 			if (row.cnt > 0) {
 				console.log('already exist!');
@@ -88,19 +88,19 @@ getItemList(function(items_new){
 	// console.log(items_new.length);
 	db.serialize(function() {
 		db.run('CREATE TABLE items (url TEXT PRIMARY KEY NOT NULL, img TEXT NOT NULL, name TEXT NOT NULL, price TEXT NOT NULL)');
-	 	var stmt1 = db.prepare('SELECT count(*) cnt FROM items where url=?');
-	 	var stmt2 = db.prepare('INSERT INTO items VALUES (?,?,?,?)');
-	 	var promises = [];
-	 	items_new.forEach(function (item_new, index_new, array_new) {
-	 		promises.push(insertData(stmt1, stmt2, item_new));
-	 	});
-	 	Promise.all(promises).then(function(results) {
+		var stmt1 = db.prepare('SELECT count(*) cnt FROM items where url=?');
+		var stmt2 = db.prepare('INSERT INTO items VALUES (?,?,?,?)');
+		var promises = [];
+		items_new.forEach(function (item_new, index_new, array_new) {
+			promises.push(insertData(stmt1, stmt2, item_new));
+		});
+		Promise.all(promises).then(function(results) {
 			stmt1.finalize();
 			stmt2.finalize();
 			db.get('SELECT count(*) cnt FROM items', function(err, row){
 				console.log('db row count:' + row.cnt);
 			});
-	 	}).catch(function() {
+		}).catch(function() {
 			console.log('error');
 		});
 	});
