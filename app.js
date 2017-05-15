@@ -40,10 +40,9 @@ var getItemList = function(callback) {
 			console.log('error: '+ response.statusCode);
 			return callback(items_new);
 		}
-		// console.log(body);
+		//console.log(body);
 		const $ = cheerio.load(body);
 		var result = $('body > div > main > div.l-content > section > div > section > a');
-		//console.log(result.length);
 		result.each(function(index, elem) {
 			var row = $(this);
 			var item = {};
@@ -53,12 +52,6 @@ var getItemList = function(callback) {
 			item.price = row.children('div.items-box-body').children('div.items-box-num').children('.items-box-price').text();
 			items_new.push(item);
 		});
-		//console.log(items_new.length);
-		//console.log('------items_new---------------------------------------------');
-		//items_new.forEach(function(item){
-		//	console.log(item.name);
-		//});
-		//console.log('---------------------------------------------------');
 		return callback(items_new);
 	});
 };
@@ -71,20 +64,20 @@ var insertData = function(stmt1, stmt2, item_new) {
 				reject(err);
 				return;
 			}
-			// console.log(row);
 			if (row.cnt > 0) {
-				console.log('already exist!');
+				// console.log('already exist!');
+				resolve(null);
 				return;
 			}
 			//console.log('1');
 			stmt2.run(item_new.url, item_new.img, item_new.name, item_new.price);
 			//console.log('2');
-			resolve('OK');
+			resolve(item_new);
 		});
 	});
 };
 
-getItemList(function(items_new){
+getItemList(function(items_new) {
 	// console.log(items_new.length);
 	db.serialize(function() {
 		db.run('CREATE TABLE items (url TEXT PRIMARY KEY NOT NULL, img TEXT NOT NULL, name TEXT NOT NULL, price TEXT NOT NULL)');
@@ -95,16 +88,48 @@ getItemList(function(items_new){
 			promises.push(insertData(stmt1, stmt2, item_new));
 		});
 		Promise.all(promises).then(function(results) {
+			// results is not use
 			stmt1.finalize();
 			stmt2.finalize();
 			db.get('SELECT count(*) cnt FROM items', function(err, row){
 				console.log('db row count:' + row.cnt);
+				diffItemList();
 			});
 		}).catch(function() {
 			console.log('error');
 		});
 	});
-})
+});
+
+var diffItemList = function() {
+	setInterval(function() {
+		getItemList(function(items_new){
+			console.log(new Date());
+			db.serialize(function() {
+				var stmt1 = db.prepare('SELECT count(*) cnt FROM items where url=?');
+				var stmt2 = db.prepare('INSERT INTO items VALUES (?,?,?,?)');
+				var promises = [];
+				items_new.forEach(function (item_new, index_new, array_new) {
+					promises.push(insertData(stmt1, stmt2, item_new));
+				});
+				Promise.all(promises).then(function(results) {
+					stmt1.finalize();
+					stmt2.finalize();
+					db.get('SELECT count(*) cnt FROM items', function(err, row){
+						console.log('db row count:' + row.cnt);
+						results.forEach(function (result, index, results) {
+							if (result != null) {
+								console.log(result);
+							}
+						});
+					});
+				}).catch(function() {
+					console.log('error');
+				});
+			});
+		});
+	}, 3000);
+};
 
 /*
 setInterval(function() {
