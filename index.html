@@ -1,44 +1,53 @@
 <!doctype html>
 <html>
-  <head>
-    <title>Socket.IO chat</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font: 13px Helvetica, Arial; }
-      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
-      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-      #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages li { padding: 5px 10px; }
-      #messages li:nth-child(odd) { background: #eee; }
-    </style>
-  </head>
-  <body>
-    <ul id="messages"></ul>
-    <form action="">
-      <input id="m" autocomplete="off" /><button>Send</button>
-    </form>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://code.jquery.com/jquery-3.2.1.js"></script>
-    <script>
-      var socket = io();
-      socket.on('event_init', function(msg){
-        console.log(msg);
-        msg.forEach(function (item, index, array) {
+<head>
+  <title>Socket.IO chat</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font: 13px Helvetica, Arial; }
+    form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+    form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+    form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+    #messages { list-style-type: none; margin: 0; padding: 0; }
+    #messages li { padding: 5px 10px; }
+    #messages li:nth-child(odd) { background: #eee; }
+  </style>
+</head>
+<body>
+  <ul id="messages"></ul>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/express-useragent.js"></script>
+  <script src="https://code.jquery.com/jquery-3.2.1.js"></script>
+  <script>
+    var userAgent = new UserAgent().parse(navigator.userAgent);
+    //console.log(userAgent.isMobile);
+    //console.log(userAgent.isDesktop);
+    var socket = io();
+    socket.on('event_init', function(msg){
+      //console.log(msg);
+      msg.forEach(function (item, index, array) {
           // mercari://item/openDetail?id=m72009396441
-          var id = item.url.match(/https:\/\/item.mercari.com\/jp\/([a-zA-Z0-9]+)\//)[1];
-          $('#messages').prepend($('<a href="mercari://item/openDetail?id='+id+'" target="_blank"><img src="'+item.img+'"/></a><span>'+item.price+'</span>'));
+          var url = item.url;
+          if (userAgent.isMobile) {
+            var id = item.url.match(/https:\/\/item.mercari.com\/jp\/([a-zA-Z0-9]+)\//)[1];
+            url = 'mercari://item/openDetail?id='+id;
+          }
+          $('#messages').prepend($('<a href="'+url+'" target="_blank"><img src="'+item.img+'"/></a><span>'+item.price+'</span>'));
         });
+    });
+    socket.on('event_diff', function(msg){
+      //console.log(msg);
+      window.scroll(0, 0);
+      $('#messages').prepend($('<li>').text(new Date()));
+      msg.forEach(function (item, index, array) {
+          var url = item.url;
+          if (userAgent.isMobile) {
+            var id = item.url.match(/https:\/\/item.mercari.com\/jp\/([a-zA-Z0-9]+)\//)[1];
+            url = 'mercari://item/openDetail?id='+id;
+          }
+          $('#messages').prepend($('<a href="'+url+'" target="_blank"><img src="'+item.img+'"/></a><span>'+item.price+'</span>'));
       });
-      socket.on('event_diff', function(msg){
-        console.log(msg);
-        window.scroll(0, 0);
-        $('#messages').prepend($('<li>').text(new Date()));
-        msg.forEach(function (item, index, array) {
-          var id = item.url.match(/https:\/\/item.mercari.com\/jp\/([a-zA-Z0-9]+)\//)[1];
-          $('#messages').prepend($('<a href="mercari://item/openDetail?id='+id+'" target="_blank"><img src="'+item.img+'"/></a><span>'+item.price+'</span>'));
-        });
-      });
-    </script>
-  </body>
+    });
+  </script>
+</body>
 </html>
